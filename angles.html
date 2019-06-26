@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<html>
+
+<style> 
+.transparent { 
+    background-color: black; 
+    color: white;
+} 
+</style> 
+
+<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
+<script src="http://code.jquery.com/ui/1.9.2/jquery-ui.min.js"></script>
+
+<script type="text/javascript" src="draw2d.min.js" ></script>
+
+<script type="text/javascript">
+
+var canvas;
+
+var firstPointDefined = false;
+var firstX;
+var firstY;
+var secondX;
+var secondY;
+
+var vectors = [];
+
+document.addEventListener("DOMContentLoaded",function () {
+	
+	canvas = new draw2d.Canvas("gfx_holder");
+
+	var onPointDefinition = function(x, y, shiftKey, ctrlKey){
+		if(!firstPointDefined){
+			firstPointDefined = true;
+			firstX = x;
+			firstY = y;
+		}else{
+			firstPointDefined = false;
+			secondX = x;
+			secondY = y;
+			var firstPoint = {};
+			firstPoint.x = firstX;
+			firstPoint.y = firstY;
+			var secondPoint = {};
+			secondPoint.x = secondX;
+			secondPoint.y = secondY;
+			
+			var col;
+			if(vectors.length == 0){
+				col = new draw2d.util.Color(255,0,0);
+			}else{
+				col = new draw2d.util.Color(0,0,255);
+			}
+
+			drawVector(firstPoint , secondPoint , col );
+			var vec = pointsToVector(firstPoint , secondPoint);
+			vectors.push(vec);
+			if(vectors.length != 1){
+				alert(detectRelativePosition(vectors[0] , vec));
+			}
+		}
+	};
+
+	canvas.onClick = onPointDefinition;
+
+});
+
+function drawVector(p1,p2 , draw2dColor){
+	var from = new draw2d.shape.node.Start();
+	from.x = p1.x;
+	from.y = p1.y;
+	//from.visible = false;
+	from.width = 0.1;
+	from.height = 0.1;
+
+	var to   = new draw2d.shape.node.End();
+	to.x = p2.x;
+	to.y = p2.y;
+	//to.visible = false;
+	to.width = 0.1;
+	to.height = 0.1;
+
+	var connection = new draw2d.Connection();
+	connection.resizeable = false;
+	connection.selectable = false;
+	connection.setSource(from.getOutputPorts().data[0]);
+	connection.setTarget(to.getInputPorts().data[0]);
+	connection.setTargetDecorator(new draw2d.decoration.connection.ArrowDecorator());
+	connection.color = draw2dColor;
+
+	canvas.add(from);
+	canvas.add(to);
+	canvas.add(connection);
+}
+
+function angleBetween(v1 , v2){
+	var dotProd  = v1.x*v2.x+v1.y*v2.y;
+	var val1 	 = Math.sqrt(v1.x*v1.x+v1.y*v1.y);
+	var val2 	 = Math.sqrt(v2.x*v2.x+v2.y*v2.y);
+	var radConst = 57.295779513;
+	return Math.acos((dotProd / (val1 * val2))) * radConst;
+
+}
+
+function angleBetweenInverDirectionFirst(v1 , v2){
+	
+	var dotProd  = v1.x*v2.x+v1.y*v2.y;
+	var val1 	 = Math.sqrt(v1.x*v1.x+v1.y*v1.y);
+	var val2 	 = Math.sqrt(v2.x*v2.x+v2.y*v2.y);
+	var radConst = 57.295779513;
+	return 180 - Math.acos((dotProd / (val1 * val2))) * radConst;
+}
+
+function detectRelativePosition(v1 , v2){
+	var val = angleBetweenInverDirectionFirst(v1 , v2);
+	if(val < 20){return 'FRONT ('+val+')';}
+	if(val < 70){return 'HALF SIDE ('+val+')';}
+	if(val < 120){return 'SIDE ('+val+')';}
+	return 'BACK ('+val+')';
+
+}
+
+function pointsToVector(p1 , p2){
+	var result = {};
+	result.x = p2.x-p1.x;
+	result.y = p2.y-p1.y;
+	return result;
+}
+
+
+
+</script>
+
+<div onselectstart="javascript:/*IE8 hack*/return false" id="gfx_holder" style="width:3000px; height:1000px;">
+
+</html>
